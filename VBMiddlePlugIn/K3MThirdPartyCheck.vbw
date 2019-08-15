@@ -1,0 +1,7 @@
+CheckBill = 44, 58, 635, 481, Z
+BOS_BeforeDel = 88, 88, 788, 523, C
+BOS_BeforeSave = 110, 110, 810, 545, C
+BOS_AfterDel = 132, 132, 832, 567, C
+BOS_AfterSave = 154, 154, 854, 589, C
+BOS_AfterMultiCheck = 176, 176, 876, 611, C
+BOS_BeforeMultiCheck = 198, 198, 898, 633, C
