@@ -1,4 +1,4 @@
-CheckBill = 44, 58, 635, 481, Z
+CheckBill = 49, 50, 640, 473, Z
 BOS_BeforeDel = 88, 88, 788, 523, C
 BOS_BeforeSave = 110, 110, 810, 545, C
 BOS_AfterDel = 132, 132, 832, 567, C
