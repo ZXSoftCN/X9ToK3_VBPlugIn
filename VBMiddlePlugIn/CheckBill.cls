@@ -31,13 +31,15 @@ Public Function HookInvoke(ByVal EventID As Long, dctParams As KFO.Dictionary) A
     Dim sDsn    As String
     Dim iPos As Long
     
-    Dim HookInvokeInnter As Boolean
+    Dim HookInvokeInner As Boolean
+    Dim HookErrMsgInner As String
     
     
     On Error GoTo err_Handle
     'GetObjectContext.SetComplete
-    HookInvokeInnter = True
+    HookInvokeInner = True
     HookInvoke = True
+    HookErrMsgInner = ""
     
     If dctParams.Lookup("BillCode") Then
         sBillNo = CStr(dctParams("BillNo"))
@@ -114,8 +116,10 @@ Public Function HookInvoke(ByVal EventID As Long, dctParams As KFO.Dictionary) A
         sCurrUser = "test"
     End If
     
-    Call DoImport(sDsn, lngTranType, lROB, lngOperate, EventID, lngFInterID, iEntryID, sBillNo, sCurrUser, "", HookInvokeInnter)
-    HookInvoke = HookInvokeInnter
+    Call DoImport(sDsn, lngTranType, lROB, lngOperate, EventID, lngFInterID, iEntryID, sBillNo, sCurrUser, "", HookInvokeInner, HookErrMsgInner)
+    HookInvoke = HookInvokeInner
+    
+    'Err.Raise Err.Number, Err.Source, Err.Description, Err.HelpFile
     
     'Set objVoucherImplent = CreateObject("K3ToX9BillTransfer.InterceptHandler")
     
@@ -163,32 +167,35 @@ Public Function HookInvoke(ByVal EventID As Long, dctParams As KFO.Dictionary) A
     Case Else
     End Select
     If Not HookInvoke Then
-        dctParams("ErrDescription") = "X9效验不通过"
-        Err.Raise dctParams.GetValue("ErrCode", 0), dctParams.GetValue("ErrSource", ""), dctParams.GetValue("ErrDescription", "")
+        'dctParams("ErrDescription") = "X9效验不通过"
+        Err.Raise Err.Number, Err.Source, Err.Description, Err.HelpFile
     End If
 'insert into t_ThirdPartyComponent VALUES (2,200003,2,'','K3MThirdPartyCheck.CheckBill','')
     Exit Function
 err_Handle:
     HookInvoke = False
-    MsgBox "X9到K3业务拦截中间件错误:" & Err.Description
+    'MsgBox "X9到K3业务拦截中间件错误:" & Err.Description
+    'Err.Description = "X9到K3业务拦截中间件错误123" '定义抛出的错误信息
+    Err.Description = HookErrMsgInner
     
-    dctParams("ErrDescription") = "X9到K3业务拦截中间件错误"
+    Err.Raise Err.Number, Err.Source, Err.Description, Err.HelpFile '必须再抛出Err，才能被K3主程序截获抛出自定义的错误信息
+    'Err.Raise dctParams.GetValue("ErrCode", 0), dctParams.GetValue("ErrSource", ""), dctParams.GetValue("ErrDescription", "")
     
 End Function
 
 Public Sub DoImport(ByVal sDsn As String, ByVal lngTranType As Integer, ByVal lROB As Integer, ByVal lngOperate As Long, _
                             ByVal EventID As Long, ByVal lngFInterID As Long, ByVal EntryID As Integer, ByVal sBillNo As String, _
-                            ByVal currUser As String, ByVal sData As String, ByRef HookInvokeInnter As Boolean)
+                            ByVal currUser As String, ByVal sData As String, ByRef HookInvokeInner As Boolean, ByRef HookErrorMsg As String)
     On Error GoTo errhandle
     Dim objVoucherImplent As Object
     
     Set objVoucherImplent = CreateObject("K3ToX9BillTransfer.InterceptHandler")
     
-   Call objVoucherImplent.Handle(sDsn, lngTranType, lROB, lngOperate, EventID, lngFInterID, EntryID, sBillNo, currUser, sData, HookInvokeInnter)
+   Call objVoucherImplent.Handle(sDsn, lngTranType, lROB, lngOperate, EventID, lngFInterID, EntryID, sBillNo, currUser, sData, HookInvokeInner, HookErrorMsg)
     
     
 errhandle:
-    HookInvokeInnter = HookInvokeInnter
+    HookInvokeInner = HookInvokeInner
     
 End Sub
     
