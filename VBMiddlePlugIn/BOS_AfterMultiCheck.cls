@@ -33,10 +33,114 @@ Public Function AfterMultiCheck(ByVal sDsn As String, _
 '/********************************************************************/
                             
         'TODO: 请在此处添加代码响应事件 AfterMultiCheck
+        Dim lngOperate As Long
+        Dim lngTranType As Long
+        Dim lngFInterID As Long
+        Dim iEntryID As Integer
+        Dim lROB As Integer
+        Dim sBillNo As String
+        Dim sCurrUser As String
+        Dim iCurrUserStart As Integer
+        Dim iCurrUserEnd As Integer
+        Dim EventID As Long
+        
+        Dim iPos As Long
+        Dim sConn As String
+        Dim HookInvokeInnter As Boolean
+        Dim HookErrMsgInner As String
+        
+        On Error GoTo err_Handle
+        'GetObjectContext.SetComplete
+        
+        HookInvokeInnter = True
         AfterMultiCheck = True
+        HookErrMsgInner = ""
+        
+        '当 FModel为0，审核时，OverBusinessLevel为True，则表示单据已审核通过
+        '当 FModel为2，弃审时，OverBusinessLevel为False，则表示单据已弃审通过
+        '以上都不需要拦截响应
+        
+        If CInt(dctBillCheckRecord("FMode")) = 0 And CBool(dctBillCheckRecord("OverBusinessLevel")) Then
+            Exit Function
+        End If
+        If CInt(dctBillCheckRecord("FMode")) = 2 And CBool(dctBillCheckRecord("OverBusinessLevel")) = False Then
+            Exit Function
+        End If
+        
+        'CInt(dctBillCheckRecord("FBusinessLevel")) 当前审核级别
+        'CInt(dctBillCheckRecord("FMaxLevel")) 终审级别
+        
+        iEntryID = 0
+        EventID = 200003 '审核后
+        lngFInterID = nFBillID
+        sBillNo = ""
+        lROB = 0
+        lngTranType = nClassID
+        
+        iPos = InStr(1, sDsn, "}", vbTextCompare)
+
+        lngOperate = 0 '默认 未知动作
+        If CInt(dctBillCheckRecord("FMode")) = 0 Then
+            lngOperate = 1 '审核
+        End If
+        
+        If CInt(dctBillCheckRecord("FMode")) = 2 Then
+            lngOperate = 2 '反审核
+        End If
+        
+        
+        If iPos > 17 Then
+            sConn = Mid(sDsn, 63, iPos - 63)
+        End If
+    
+        iCurrUserStart = InStr(1, sDsn, "UserName=", vbTextCompare)
+        iCurrUserEnd = InStr(iCurrUserStart, sDsn, ";", vbTextCompare)
+        If iCurrUserEnd > iCurrUserStart Then
+            sCurrUser = Mid(sDsn, iCurrUserStart + Len("UserName="), iCurrUserEnd - Len("UserName=") - iCurrUserStart)
+        Else
+            sCurrUser = "test"
+        End If
+        
+        'iCurrUserStart = InStr(1, dctParams("sDsn"), "UserName=", vbTextCompare)
+        'iCurrUserEnd = InStr(iCurrUserStart, dctParams("sDsn"), ";", vbTextCompare)
+        'If iCurrUserEnd > iCurrUserStart Then
+        '    sCurrUser = Mid(dctParams("sDsn"), iCurrUserEnd - Len("UserName=") - 2, iCurrUserEnd - Len("UserName=") - iCurrUserStart)
+        'Else
+        '    sCurrUser = "test"
+        'End If
+        
+        Call DoImport(sConn, lngTranType, lROB, lngOperate, EventID, lngFInterID, iEntryID, sBillNo, sCurrUser, "", HookInvokeInnter, HookErrMsgInner)
+        AfterMultiCheck = HookInvokeInnter
+        If Not AfterMultiCheck Then
+            Err.Raise Err.Number, Err.Source, Err.Description, Err.HelpFile
+        End If
+        
+        Exit Function
+err_Handle:
+    AfterMultiCheck = False
+    'MsgBox "X9到K3业务拦截中间件错误:" & Err.Description
+    Err.Description = HookErrMsgInner
+    
+    Err.Raise Err.Number, Err.Source, Err.Description, Err.HelpFile '必须再抛出Err，才能被K3主程序截获抛出自定义的错误信息
 
 End Function
  
  
  
+
+Public Sub DoImport(ByVal sDsn As String, ByVal lngTranType As Long, ByVal lROB As Integer, ByVal lngOperate As Long, _
+                            ByVal EventID As Long, ByVal lngFInterID As Long, ByVal EntryID As Integer, ByVal sBillNo As String, _
+                            ByVal currUser As String, ByVal sData As String, ByRef HookInvokeInnter As Boolean, ByRef HookErrorMsg As String)
+    On Error GoTo errhandle
+    Dim objVoucherImplent As Object
+    
+    Set objVoucherImplent = CreateObject("K3ToX9BillTransfer.InterceptHandler")
+    
+    Call objVoucherImplent.Handle(sDsn, lngTranType, lROB, lngOperate, EventID, lngFInterID, EntryID, sBillNo, currUser, sData, HookInvokeInnter, HookErrorMsg)
+    Exit Sub
+    
+errhandle:
+    HookInvokeInnter = False
+    
+End Sub
 

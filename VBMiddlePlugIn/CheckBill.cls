@@ -65,7 +65,7 @@ Public Function HookInvoke(ByVal EventID As Long, dctParams As KFO.Dictionary) A
         lngOperate = CLng(dctParams("OperateCode"))
         lngFInterID = CLng(dctParams("InterID"))
     
-    ElseIf EventID = 300007 Then
+    ElseIf EventID = 300007 Or EventID = 300008 Then
         '关闭前事件/反关闭事件：自定义Operate为64，128，以便合并统一用Operate处理。
         If CInt(dctParams("CloseSwitch")) = 1 Then
             '反关闭
@@ -79,9 +79,15 @@ Public Function HookInvoke(ByVal EventID As Long, dctParams As KFO.Dictionary) A
         '关闭事件通过TableHeadName设定lngTranType
         If CStr(dctParams("TableHeadName")) = "POOrder" Then
             lngTranType = 71
+        ElseIf CStr(dctParams("TableHeadName")) = "POInstock" Then
+            lngTranType = 72
+        ElseIf CStr(dctParams("TableHeadName")) = "SEOutStock" Then
+            lngTranType = 83
+        ElseIf CStr(dctParams("TableHeadName")) = "SEOrder" Then
+            lngTranType = 81
         End If
         
-    ElseIf EventID = 300015 Then
+    ElseIf EventID = 300015 Or EventID = 300016 Then
         '行关闭前事件/反行关闭事件
         If CInt(dctParams("CloseSwitch")) = 1 Then
             '反关闭
@@ -96,6 +102,8 @@ Public Function HookInvoke(ByVal EventID As Long, dctParams As KFO.Dictionary) A
         '行关闭事件通过TableHeadName设定lngTranType
         If CStr(dctParams("TableHeadName")) = "POOrder" Then
             lngTranType = 71
+        ElseIf CStr(dctParams("TableHeadName")) = "SEOrder" Then
+            lngTranType = 81
         End If
     Else
         lngOperate = 0
